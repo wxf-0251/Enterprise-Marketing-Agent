@@ -26,3 +26,6 @@
 git clone [https://github.com/wxf-0251/XiaoHongShu-Copy-Agent-PoC.git](https://github.com/wxf-0251/XiaoHongShu-Copy-Agent-PoC.git)
 cd XiaoHongShu-Copy-Agent-PoC
 pip install -r requirements.txt
+```
+###运行截图
+![项目截图](微信图片_20260316152211_230_19.png)
