@@ -87,11 +87,9 @@ Enterprise-Marketing-Agent/
 
 ### 1. 环境准备
 ```bash
-# 克隆项目 (注意：请将下方链接替换为您 fork 后的仓库地址)
-git clone [https://github.com/wxf-0251/Enterprise-Marketing-Agent.git](https://github.com/wxf-0251/Enterprise-Marketing-Agent.git)
+git clone https://github.com/wxf-0251/Enterprise-Marketing-Agent.git
 cd Enterprise-Marketing-Agent
 
-# 安装核心依赖
 pip install -r requirements.txt
 ```
 
