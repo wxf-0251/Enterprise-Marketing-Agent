@@ -8,7 +8,8 @@
 
 基于 **LangGraph** 状态机与 **RAG (检索增强生成)** 架构开发的企业级营销文案生成智能体。通过引入多智能体协同与“反思-重写”闭环，彻底解决大模型在商业落地中常见的“事实幻觉”与“风格不可控”问题。
 
-> **🌟 核心升级说明：** > 本项目已从早期的线性单体 Prompt 脚本，彻底重构为**基于状态流转的 Multi-Agent 架构**，并实现了标准的前后端业务解耦。
+> **🌟 核心升级说明：**
+> 本项目已从早期的线性单体 Prompt 脚本，彻底重构为**基于状态流转的 Multi-Agent 架构**，并实现了标准的前后端业务解耦。
 
 ---
 
@@ -56,3 +57,66 @@
          │
          ▼
 [输出最终合规文案] (审核通过 或 达到最大循环次数)
+```
+
+---
+
+## 📂 工程目录结构 (Directory Structure)
+
+```text
+Enterprise-Marketing-Agent/
+├── .env                  # 敏感环境变量配置 (需自行创建，切勿上传)
+├── requirements.txt      # 项目依赖
+├── data/
+│   └── my_knowledge.txt  # 企业私有知识库文档 (RAG 数据源)
+├── core/                 # Agent 核心大脑
+│   ├── __init__.py
+│   ├── state.py          # Agent 全局状态字典定义 (TypedDict & Reducer)
+│   ├── nodes.py          # 检索、生成、审核三大核心节点逻辑
+│   └── graph.py          # LangGraph 状态机边与条件路由编排
+├── api/                  # 后端服务层
+│   ├── __init__.py
+│   └── server.py         # FastAPI 核心服务端 (端口: 8000)
+└── web/                  # 前端展示层
+    └── ui.py             # Streamlit 用户交互前端 (端口: 8501)
+```
+
+---
+
+## 🚀 快速启动 (Quick Start)
+
+### 1. 环境准备
+```bash
+# 克隆项目 (注意：请将下方链接替换为您 fork 后的仓库地址)
+git clone [https://github.com/wxf-0251/Enterprise-Marketing-Agent.git](https://github.com/wxf-0251/Enterprise-Marketing-Agent.git)
+cd Enterprise-Marketing-Agent
+
+# 安装核心依赖
+pip install -r requirements.txt
+```
+
+### 2. 配置密钥与本地环境
+在项目根目录新建 `.env` 文件，并填入您的大模型 API 密钥（本项目默认使用 DeepSeek API）：
+```env
+DEEPSEEK_API_KEY=your_api_key_here
+HF_ENDPOINT=[https://hf-mirror.com](https://hf-mirror.com)  # 解决国内下载 HuggingFace 模型网络问题
+```
+
+### 3. 启动服务 (需开启两个终端)
+
+**终端 1：启动核心 Agent 后端引擎**
+```bash
+uvicorn api.server:app --reload
+```
+*启动成功后，后端将运行在 http://127.0.0.1:8000，并实时打印 Agent 节点的反思流转日志。*
+
+**终端 2：启动前端交互页面**
+```bash
+streamlit run web/ui.py
+```
+*启动成功后，浏览器将自动打开 http://localhost:8501。*
+
+---
+
+## 👨‍💻 开发者 (Author)
+* **王秀蜂** - 独立架构与开发
