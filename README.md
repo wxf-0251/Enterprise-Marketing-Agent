@@ -1,32 +1,58 @@
-# 📕 小红书爆款文案生成 Agent (PoC)
+# 🤖 企业级多智能体自闭环营销系统 (Enterprise Multi-Agent Workflow)
 
-基于 LangChain 与大语言模型 (LLM) 开发的小红书爆款文案生成与分析辅助工具。
-**【最新更新】** 项目已重构为前后端分离架构，新增 FastAPI 服务端，支持将 Agent 工作流作为标准 RESTful API 提供给第三方业务调用。
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![LangGraph](https://img.shields.io/badge/LangGraph-State_Machine-orange)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
+![Streamlit](https://img.shields.io/badge/Streamlit-Frontend-FF4B4B)
+![RAG](https://img.shields.io/badge/RAG-ChromaDB-purple)
 
-## ✨ 核心特性
+基于 **LangGraph** 状态机与 **RAG (检索增强生成)** 架构开发的企业级营销文案生成智能体。通过引入多智能体协同与“反思-重写”闭环，彻底解决大模型在商业落地中常见的“事实幻觉”与“风格不可控”问题。
 
-- **前后端分离架构**：提供 Streamlit 可视化 Web UI 与 FastAPI 标准接口两种使用形态。
-- **高度模块化的 Prompt 设计**：结构化输出（标题推荐+痛点引入+干货正文+互动引导）。
-- **多风格一键切换**：支持“干货科普、闺蜜种草、搞笑幽默”等多模态情绪输出。
-- **企业级安全规范**：引入‘dotenv’进行敏感环境变量隔离，保护 API 资产安全。
-- **低耦合架构**：使用 LangChain 的 LCEL 语法构建工作流，可无缝平替不同底层大模型（支持 DeepSeek, Qwen, OpenAI 等）。
+> **🌟 核心升级说明：** > 本项目已从早期的线性单体 Prompt 脚本，彻底重构为**基于状态流转的 Multi-Agent 架构**，并实现了标准的前后端业务解耦。
 
-## 🛠️ 技术栈
+---
 
-- **核心框架**: Python 3.10+
-- **AI 编排**: LangChain (核心逻辑与大模型编排)
-- **后端接口**: FastAPI + Uvicorn + Pydantic (高并发 RESTful API 封装)
-- **前端交互**: Streamlit (轻量级数据驱动 Web 界面)
-- **安全配置**: python-dotenv
+## ✨ 核心特性 (Core Features)
 
-## 🚀 快速启动
+* **🧠 多智能体协同与反思闭环 (Reflection & Multi-Agent)**
+  抛弃传统的线性调用，采用 LangGraph 构建状态机。内置三大 Agent：
+  * `Researcher`：负责知识检索与事实提取。
+  * `Writer`：负责结合检索事实进行定向风格的初稿创作。
+  * `Reviewer`：负责事实核查与合规审查，若发现幻觉参数，自动输出 Feedback 并打回 `Writer` 节点重写。
+* **📚 深度 RAG 抗幻觉机制**
+  集成 `ChromaDB` 向量库与 `m3e-base` 嵌入模型，构建企业私有知识库。所有生成的文案必须强制挂载真实技术参数，实现从根源上的数据防伪。
+* **🛡️ 生产级防御性编程**
+  针对大模型 JSON 格式化输出不稳定的通病，内置健壮的字符串清洗与反序列化解析模块，并通过 `.get()` 安全兜底机制保障服务端极高的容错率。
+* **⚙️ 标准前后端分离交付**
+  * **后端 (FastAPI)**：作为核心大模型推理与图计算引擎，提供高并发 RESTful API。
+  * **前端 (Streamlit)**：轻量级数据驱动 Web 界面，实现平滑的用户交互。
+  * **安全**：通过 `python-dotenv` 隔离真实 API 密钥，保障资产安全。
 
-### 1. 克隆项目与安装依赖
-```bash
-git clone [https://github.com/wxf-0251/XiaoHongShu-Copy-Agent-PoC.git](https://github.com/wxf-0251/XiaoHongShu-Copy-Agent-PoC.git)
-cd XiaoHongShu-Copy-Agent-PoC
-pip install -r requirements.txt
-```
+---
 
-##  运行截图
-![项目截图](微信图片_20260316152211_230_19.png)
+## 🗺️ 系统架构图 (Architecture)
+
+系统采用 LangGraph 驱动的循环状态流转，最大重写次数（Iteration）阈值保护，防止 Token 无限消耗。
+
+```text
+[用户请求 (Topic & Tone)]
+       │
+       ▼
+┌──────────────────┐
+│  Researcher 节点 │ <--- 检索本地 ChromaDB 私有知识库
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│    Writer 节点   │ <--- 结合背景知识与风格要求，生成文案草稿
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│   Reviewer 节点  │ <--- 严格审查：是否包含捏造数据？风格是否匹配？
+└────────┬─────────┘
+         │
+         ├─── (审核不通过 / is_pass: False) ──> 返回 Feedback 并打回重写
+         │
+         ▼
+[输出最终合规文案] (审核通过 或 达到最大循环次数)
