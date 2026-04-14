@@ -1,4 +1,4 @@
-# 🚀 轻量级多智能体营销文案生成器 (PoC)
+#  轻量级多智能体营销文案生成器 (PoC)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![LangGraph](https://img.shields.io/badge/LangGraph-State_Machine-orange)
@@ -6,12 +6,12 @@
 
 这是一个基于 **LangGraph** 和 **RAG** 的多智能体协作项目，主要用于自动生成特定风格的营销文案（如小红书风）。
 
-> **💡 开发小记：**
+> ** 开发小记：**
 > 作为一名机器人工程专业的学生，我最初只是写了一个简单的 LangChain 线性调用脚本来生成文案。但在测试中发现，大模型在遇到具体的“硬核产品参数”时特别喜欢胡编乱造。为了约束它的输出，我重构了整个架构，引入了本地 RAG 来提供真实依据，并用 LangGraph 把流程改造成了“生成 -> 审核 -> 打回重写”的闭环状态机。踩了不少坑，但也算把流程跑通了。
 
 ---
 
-## 🛠️ 遇到过的问题与解决方案 (Features)
+##  遇到过的问题与解决方案 (Features)
 
 * **痛点 1：大模型总是捏造产品参数（幻觉）**
   * **方案：** 接入 `ChromaDB` 和 `m3e-base` 构建了一个非常轻量级的本地知识库 (RAG)。Agent 在写文案前，必须先去知识库里检索真实数据，强制根据检索结果生成。
@@ -24,7 +24,7 @@
 
 ---
 
-## 🗺️ 系统流转逻辑
+##  系统流转逻辑
 
 ```text
 [输入主题与风格] -> 检索本地 ChromaDB -> Writer 写初稿 -> Reviewer 审核
@@ -36,7 +36,7 @@
 
 ---
 
-## 📂 核心目录结构
+##  核心目录结构
 
 ```text
 Enterprise-Marketing-Agent/
@@ -56,7 +56,7 @@ Enterprise-Marketing-Agent/
 
 ---
 
-## 🚀 跑起来试试 (Quick Start)
+##  跑起来试试 (Quick Start)
 
 ### 1. 环境准备
 ```bash
@@ -87,7 +87,3 @@ streamlit run web/ui.py
 
 ---
 
-## 📝 待办事项 (TODO)
-* [ ] 当前的 RAG 只有简单的文本检索，后续考虑加上 Rerank（重排）模型提高准确度。
-* [ ] 尝试接入更多开源大模型（如 Qwen）进行效果对比。
-* [ ] Streamlit 界面略显简陋，之后看能不能换用 Vue/React 重写一个更现代化的前端。
