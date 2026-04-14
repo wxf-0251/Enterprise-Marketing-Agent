@@ -1,89 +1,122 @@
-#  轻量级多智能体营销文案生成器 (PoC)
+# 🤖 企业级多智能体自闭环营销系统 (Enterprise Multi-Agent Workflow)
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![LangGraph](https://img.shields.io/badge/LangGraph-State_Machine-orange)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
+![Streamlit](https://img.shields.io/badge/Streamlit-Frontend-FF4B4B)
+![RAG](https://img.shields.io/badge/RAG-ChromaDB-purple)
 
-这是一个基于 **LangGraph** 和 **RAG** 的多智能体协作项目，主要用于自动生成特定风格的营销文案（如小红书风）。
+基于 **LangGraph** 状态机与 **RAG (检索增强生成)** 架构开发的企业级营销文案生成智能体。通过引入多智能体协同与“反思-重写”闭环，彻底解决大模型在商业落地中常见的“事实幻觉”与“风格不可控”问题。
 
->  开发小记：
-> 作为一名机器人工程专业的学生，我最初只是写了一个简单的 LangChain 线性调用脚本来生成文案。但在测试中发现，大模型在遇到具体的“硬核产品参数”时特别喜欢胡编乱造。为了约束它的输出，我重构了整个架构，引入了本地 RAG 来提供真实依据，并用 LangGraph 把流程改造成了“生成 -> 审核 -> 打回重写”的闭环状态机。踩了不少坑，但也算把流程跑通了。
-
----
-
-##  遇到过的问题与解决方案 (Features)
-
- **痛点 1：大模型总是捏造产品参数（幻觉）**
- **方案：** 接入 `ChromaDB` 和 `m3e-base` 构建了一个非常轻量级的本地知识库 (RAG)。Agent 在写文案前，必须先去知识库里检索真实数据，强制根据检索结果生成。
- **痛点 2：输出风格不稳定，一次生成往往不能用**
-   **方案：** 抛弃单次请求，引入 LangGraph 构建状态机。设定了 `Researcher`, `Writer`, `Reviewer` 三个节点。写完后先过 `Reviewer` 审核，一旦发现捏造数据或风格不对，直接打回 `Writer` 重新生成，最多循环 3 次。
- **痛点 3：模型 JSON 输出不稳定，导致后端经常崩**
-   **方案：** 测试时发现部分模型（如 DeepSeek）对强约束的 `json_schema` 语法兼容不好，会报 400 错误。因此改用“手写 Prompt 约束 + 后端健壮的反序列化清洗”，并加了 `.get()` 兜底机制，保证后端服务不会因为大模型一次抽风就彻底死掉。
- **痛点 4：单体脚本不好扩展**
-   **方案：** 做了基础的前后端分离。FastAPI 跑后端计算，Streamlit 做前端可视化，并用 `.env` 彻底隔离了 API Key 保护资产安全。
+> **🌟 核心升级说明：**
+> 本项目已从早期的线性单体 Prompt 脚本，彻底重构为**基于状态流转的 Multi-Agent 架构**，并实现了标准的前后端业务解耦。
 
 ---
 
-##  系统流转逻辑
+## ✨ 核心特性 (Core Features)
+
+* **🧠 多智能体协同与反思闭环 (Reflection & Multi-Agent)**
+  抛弃传统的线性调用，采用 LangGraph 构建状态机。内置三大 Agent：
+  * `Researcher`：负责知识检索与事实提取。
+  * `Writer`：负责结合检索事实进行定向风格的初稿创作。
+  * `Reviewer`：负责事实核查与合规审查，若发现幻觉参数，自动输出 Feedback 并打回 `Writer` 节点重写。
+* **📚 深度 RAG 抗幻觉机制**
+  集成 `ChromaDB` 向量库与 `m3e-base` 嵌入模型，构建企业私有知识库。所有生成的文案必须强制挂载真实技术参数，实现从根源上的数据防伪。
+* **🛡️ 生产级防御性编程**
+  针对大模型 JSON 格式化输出不稳定的通病，内置健壮的字符串清洗与反序列化解析模块，并通过 `.get()` 安全兜底机制保障服务端极高的容错率。
+* **⚙️ 标准前后端分离交付**
+  * **后端 (FastAPI)**：作为核心大模型推理与图计算引擎，提供高并发 RESTful API。
+  * **前端 (Streamlit)**：轻量级数据驱动 Web 界面，实现平滑的用户交互。
+  * **安全**：通过 `python-dotenv` 隔离真实 API 密钥，保障资产安全。
+
+---
+
+## 🗺️ 系统架构图 (Architecture)
+
+系统采用 LangGraph 驱动的循环状态流转，最大重写次数（Iteration）阈值保护，防止 Token 无限消耗。
 
 ```text
-[输入主题与风格] -> 检索本地 ChromaDB -> Writer 写初稿 -> Reviewer 审核
-                                                     │
-                                 (不合格返回重写) ───┘
-                                                     │
-                                             [输出最终文案]
+[用户请求 (Topic & Tone)]
+       │
+       ▼
+┌──────────────────┐
+│  Researcher 节点 │ <--- 检索本地 ChromaDB 私有知识库
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│    Writer 节点   │ <--- 结合背景知识与风格要求，生成文案草稿
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│   Reviewer 节点  │ <--- 严格审查：是否包含捏造数据？风格是否匹配？
+└────────┬─────────┘
+         │
+         ├─── (审核不通过 / is_pass: False) ──> 返回 Feedback 并打回重写
+         │
+         ▼
+[输出最终合规文案] (审核通过 或 达到最大循环次数)
 ```
 
 ---
 
-##  核心目录结构
+## 📂 工程目录结构 (Directory Structure)
 
 ```text
 Enterprise-Marketing-Agent/
-├── .env                  # 记得自己建一个，放 API Key
-├── requirements.txt      
+├── .env                  # 敏感环境变量配置 (需自行创建，切勿上传)
+├── requirements.txt      # 项目依赖
 ├── data/
-│   └── my_knowledge.txt  # RAG 的本地测试语料
-├── core/                 # Agent 核心逻辑
-│   ├── state.py          # 全局状态定义
-│   ├── nodes.py          # 检索、生成、审核的节点代码
-│   └── graph.py          # LangGraph 图流转编排
-├── api/                  
-│   └── server.py         # FastAPI 接口 (端口 8000)
-└── web/                  
-    └── ui.py             # Streamlit 前端 (端口 8501)
+│   └── my_knowledge.txt  # 企业私有知识库文档 (RAG 数据源)
+├── core/                 # Agent 核心大脑
+│   ├── __init__.py
+│   ├── state.py          # Agent 全局状态字典定义 (TypedDict & Reducer)
+│   ├── nodes.py          # 检索、生成、审核三大核心节点逻辑
+│   └── graph.py          # LangGraph 状态机边与条件路由编排
+├── api/                  # 后端服务层
+│   ├── __init__.py
+│   └── server.py         # FastAPI 核心服务端 (端口: 8000)
+└── web/                  # 前端展示层
+    └── ui.py             # Streamlit 用户交互前端 (端口: 8501)
 ```
 
 ---
 
-##  跑起来试试 (Quick Start)
+## 🚀 快速启动 (Quick Start)
 
 ### 1. 环境准备
 ```bash
-git clone https://github.com/wxf-0251/Enterprise-Marketing-Agent.git
+# 克隆项目 (注意：请将下方链接替换为您 fork 后的仓库地址)
+git clone [https://github.com/wxf-0251/Enterprise-Marketing-Agent.git](https://github.com/wxf-0251/Enterprise-Marketing-Agent.git)
 cd Enterprise-Marketing-Agent
+
+# 安装核心依赖
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境
-在根目录新建一个 `.env` 文件，填入你的大模型 API 密钥（测试时使用的是 DeepSeek）：
+### 2. 配置密钥与本地环境
+在项目根目录新建 `.env` 文件，并填入您的大模型 API 密钥（本项目默认使用 DeepSeek API）：
 ```env
-DEEPSEEK_API_KEY=你的密钥
-HF_ENDPOINT=https://hf-mirror.com  # 解决国内加载 HuggingFace m3e 模型卡死的问题
-TOKENIZERS_PARALLELISM=false       # 核心修复：防止 Windows 下多进程分词产生死锁
+DEEPSEEK_API_KEY=your_api_key_here
+HF_ENDPOINT=[https://hf-mirror.com](https://hf-mirror.com)  # 解决国内下载 HuggingFace 模型网络问题
 ```
 
-### 3. 分别启动前后端
+### 3. 启动服务 (需开启两个终端)
 
-**终端 1：启动后台服务**
+**终端 1：启动核心 Agent 后端引擎**
 ```bash
 uvicorn api.server:app --reload
 ```
+*启动成功后，后端将运行在 http://127.0.0.1:8000，并实时打印 Agent 节点的反思流转日志。*
 
-**终端 2：启动前端页面**
+**终端 2：启动前端交互页面**
 ```bash
 streamlit run web/ui.py
 ```
+*启动成功后，浏览器将自动打开 http://localhost:8501。*
 
 ---
 
+## 👨‍💻 开发者 (Author)
+* **王秀蜂** - 独立架构与开发
